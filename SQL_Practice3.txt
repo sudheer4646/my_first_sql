@@ -1,0 +1,232 @@
+--Data Definition Language (DDL): changes the structure of the table like creating a table, drop a table, altering a table
+CREATE
+ALTER
+DROP
+TRUNCATE
+
+--CREATE
+Syntax: CREATE DATABASE database_name;
+
+create database PROD_DB;
+
+CREATE SCHEMA HR_SCHEMA;a
+
+use HR_DEPT_DB;
+50 
+10 HR dept --
+12 
+20 FInance --
+create table empdtl (empid int,empname varchar(50),empsal int);
+
+create schema finance_schema;
+
+create table loan_details(loanid int, loan_type varchar(100), laon_status varchar(100))
+
+create table empaddress (empid int,empcountry varchar(50),empaddress varchar(200));
+
+--create table HR_SCHEMA.empdtl (empid int,empname varchar(50),empsal int)
+ALTER TABLE empdtl ADD empdesg VARCHAR(50);
+
+ALTER TABLE PROD_DB.HR_SCHEMA.empdtl ADD empdesg VARCHAR(50);
+
+DESCRIBE TABLE empdtl;
+
+select * from empdtl limit 10;  --11.24
+
+---DROP TABLE HR_SCHEMA.empdtl;
+
+alter table empdtl  alter column  empname varchar(100)
+
+describe table empdtl;
+
+ALTER TABLE empdtl ADD EMPADDRESS VARCHAR(50)
+
+describe table empdtl;
+
+ALTER TABLE empdtl  DROP COLUMN EMPADDRESS
+
+describe table empdtl;
+/*Data Manipulation Language(DML)
+INSERT
+UPDATE
+DELETE */
+
+INSERT INTO empdtl  VALUES (1,'Kiran',50000,'SSE'),
+(2,'Madhu',50000,'SSE');  
+
+update empdtl set empdesg='TL', empsal=60000 where empid=2
+
+delete from empdtl where empid=1
+
+select * from empdtl where empid=2;
+
+select empname,empdesg,empsal from empdtl;
+
+insert into empdtl (EMPID,EMPNAME,EMPSAL,EMPDESG)
+select 8,'krishna',70000,'TL' union all
+select 9,'balu',60000, 'SE' union all
+select 56,'hari',40000, 'ASE' union all
+select 34,'kish',900000,'MG'
+
+select * from empdtl where upper(empdesg)='TL';
+
+select upper('Skill Scaler')
+
+describe table empdtl
+
+INSERT INTO empdtl VALUES (45,'KARTHIK',56577) -- throws error insert list is not specified and inserting data for all columns
+INSERT INTO empdtl  (EMPID,EMPNAME,EMPSAL) VALUES (45,'KARTHIK',56577) 
+
+INSERT INTO empdtl (empname,empsal,empid,empdesg)VALUES ('KARTHIK',56577,45,'SE')
+
+describe table empdtl
+select * from empdtl
+select * from empdtl where empid=1
+select * from empdtl where empid!=1
+select * from empdtl where empid<>1
+select * from empdtl where empsal>50000 and empdesg='TL'
+select * from empdtl where empdesg=null -- null cant be filtered with =
+select * from empdtl where empdesg is null
+INSERT INTO empdtl  (EMPID,EMPNAME,EMPSAL,EMPDESG) VALUES (57,'RRK',56000,'')
+select * from empdtl where empdesg=''
+
+select * from empdtl where empdesg='TL'
+select * from empdtl where empdesg in('SE','SSE','TL')
+
+select * from empdtl where empdesg not in('SE','SSE','TL')
+
+
+ALTER TABLE empdtl  ADD EMAILID VARCHAR(50)
+UPDATE empdtl  SET EMAILID=EMPNAME+'@skillscaler.net' -- in SQL server
+UPDATE empdtl  SET EMAILID=EMPNAME||'@skillscaler.net' --In sanowflake we will use "||" to concatinate instead of +
+update empdtl  set empid=3 where empname='KARTHIK'
+update empdtl  set empdesg='SE' WHERE EMPID=3
+DELETE FROM empdtl  WHERE EMPID=3
+select * from empdtl
+--SELECT * INTO emp_dtl FROM empdtl  ----to create full table structure along with data 
+
+CREATE TABLE empdtl_new as select * from empdtl  --- In snowflake to create full table structure along with data
+
+select * from empdtl_new
+
+CREATE TABLE emp_dtl5 like empdtl  --- In snowflake to copy only structure with out data
+
+select * from EMP_DTL5;
+
+delete from empdtl_new -- row by row --slow
+
+truncate table empdtl_new  -- one shot -- only one entry in transaction log
+
+DROP TABLE empdtl_new =>data+structure will not be available
+
+select * from empdtl_new
+ 
+--transaction log
+
+--select * into emp_dtl3 from empdtl where 5=6  ----it will copy only structure with out data
+
+select * from empdtl;
+
+select count(*) from empdtl;
+
+select count(empid) from empdtl;
+
+select count(empdesg) from empdtl;
+insert into emp_dtl3 select * from emp_dtl /*inserts data into another table with same structure */
+INSERT into empdtl (empid,empname,empsal,empdesg) SELECT empid,empname,empsal,empdesg  FROM emp_dtl	 /*inserts specific columns into another table*/
+select * from empdtl ;
+select * from emp_dtl3; 
+delete from emp_dtl3;  -- delete with out filter condition deletes all the data but there are chances to roll back the data that's deleted
+--DELETE: it will have entry in transaction log for each and every record so it will be slow
+truncate table empdtl;  -- delete's all the data in table we cant roll back once delete 
+--TRUNCATE:  permanently delete's all the data and it will faster compared to delte statement as it will put single entry in transaction log
+select * from empdtl;
+
+drop table empdtl    -- drops the table along with structure i.e table will no longer be there
+select * from emp_dtl
+
+--TCL (Transactional Control language)
+-- to rollback a transaction begining a transaction is must
+BEGIN TRANSACTION;
+update emp_dtl set empdesg='TL' where empid=1;
+insert into emp_dtl  select 11,'Ram',70000,'TL','ram@skillscaler.net';
+DELETE FROM emp_dtl WHERE EMPID =56;
+rollback; --(will not affect if executed immediate to that)
+
+update emp_dtl set empdesg='TL' where empid=1;
+insert into emp_dtl  select 11,'Ram',70000,'TL','ram@skillscaler.net';
+DELETE FROM emp_dtl WHERE EMPID =56;
+
+create table emp_dtl as select * from EMPDTL
+select * from empdtl
+-- COMMIT: used to save transactions that we performed before commit
+BEGIN TRANSACTION;
+update emp_dtl set empdesg='TL' where empid=1;
+insert into emp_dtl2  select 8,'Ram',70000,'TL','ram@skillscaler.net';
+DELETE FROM emp_dtl WHERE EMPID =56;
+COMMIT;
+
+select * from emp_dtl WHERE EMPID =56
+
+insert into emp_dtl (empid, empname,empsal, empdesg)
+select 81,'ravi',80000,'TL' union all
+select 91,'balu',70000, 'SE' union all
+select 97,'hari',50000, 'ASE' union all
+select 116,'kish',1000000,'MG'
+
+-- ORDER BY CLAUSE : used to show the data either in ascending order or descending order 
+-- Default order is ascending
+select * from  emp_dtl order by empsal desc
+select * from  emp_dtl order by empsal asc   -- default sorting order ascending
+select * from  emp_dtl order by empsal desc, empid desc
+
+select * from  emp_dtl order by empdesg 
+
+-- GROUP BY: used to group the data based on column specified in group by class
+select * from emp_dtl where empdesg='TL'
+delete from emp_dtl where empdesg ='';
+-- LIST distinct values in a column
+select distinct empdesg from emp_dtl limit 10
+select empdesg,SUM(empsal) as sum from emp_dtl where empdesg='TL' group by empdesg having SUM(empsal)>200000 l
+select empdesg,MAX(empsal) as maxsal from emp_dtl group by empdesg
+select empdesg,min(empsal) as minsal from emp_dtl group by empdesg
+select empdesg,avg(empsal) as avgsal from emp_dtl group by empdesg
+select empdesg,count(*) as employeecount from emp_dtl group by empdesg
+select empname, empdesg,MAX(empsal) as sum from emp_dtl group by empdesg -- empname -- will through error
+select empdesg,empname,empid. SUM(empsal) as sum from emp_dtl group by empdesg,empname
+select empdesg, SUM(empsal) as sum from emp_dtl group by empdesg,empname,empid
+select empdesg,SUM(empsal) as sum from emp_dtl  group by empdesg, empname, empsal
+--Having => Its nothing but where class but it is used only for aggregate functions (after group by to filter=> having)
+select empdesg,SUM(empsal) as sum from emp_dtl group by empdesg 
+
+select * from emp_dtl where empsal>50000
+select empdesg,SUM(empsal) as sum from emp_dtl where empsal>50000 group by empdesg having sum(empsal)>50000 order by empdesg 
+
+
+
+select empdesg,SUM(empsal) as empsal_sum from emp_dtl where empsal<100000  group by empdesg having sum(empsal)>50000 order by empdesg limit 5
+
+
+create table test_hitesh(id int, sal varchar(1000))
+
+
+
+--where condition, group by, having and order by is the sequence of using those statements
+select * from emp_dtl
+select top 7 * from emp_dtl
+select top 5 empid,empname from emp_dtl
+--select * from emp_dtl limit 5 -- in oracle
+
+--System defined functions readily available to do operations
+select * from emp_dtl
+-- Aggregate functions
+select  SUM(empsal) from emp_dtl
+select empdesg, SUM(empsal) from emp_dtl group by empdesg
+select MAX(empsal) as max_sal,min(empsal) min_sal  from emp_dtl
+select MIN(empsal) from emp_dtl
+select AVG(empsal) from emp_dtl
+-- count:  used to find number of rows in a specified table
+
+select * from emp_dtl;
+select count(*) from emp_dtl -- gives count of records in your table
+select count(empid) from emp_dtl -- it will ignore null while calculating count

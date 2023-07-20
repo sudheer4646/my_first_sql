@@ -1,0 +1,67 @@
+use database PRODUCTION_DATABASE;
+create schema sf_schema;
+CREATE OR REPLACE TABLE customers (
+  id              INT NOT NULL,
+  last_name       VARCHAR(100) ,
+  first_name      VARCHAR(100),
+  email           VARCHAR(100),
+  company         VARCHAR(100),
+  phone           VARCHAR(100),
+  address1        STRING,
+  address2        STRING,
+  city            VARCHAR(100),
+  state           VARCHAR(100),
+  postal_code     VARCHAR(15),
+  country         VARCHAR(50)
+);
+
+describe table customers
+select * from customers;
+
+LIST @PRODUCTION_DATABASE.SF_SCHEMA.EXTERNAL_S3_STG
+
+LIST @PRODUCTION_DATABASE.SF_SCHEMA.EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/11_07_2023/
+
+select * from customers;
+-- load a specific file
+CREATE OR REPLACE FILE FORMAT "PRODUCTION_DATABASE"."SF_SCHEMA".CSV_FILEFORMAT  COMPRESSION = 'AUTO' FIELD_DELIMITER = ',' RECORD_DELIMITER = '\n' SKIP_HEADER = 1
+
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/11_01_2023/customer_dim_11_01_2023_08_36_01.csv 
+file_format = CSV_FILEFORMAT;
+
+
+---  If you try to load the same file again it wont load again as loadhistory metadata will be maintained for 64 days at table level for copy command
+
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/11_01_2023/customer_dim_11_01_2023_08_36_01.csv 
+file_format = CSV_FILEFORMAT FORCE=TRUE;
+
+-- If you would like to reload the same again, specify Force=TRUE in copy command
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/11_01_2023/customer_dim_11_01_2023_08_36_01.csv 
+file_format = CSV_FILEFORMAT FORCE=TRUE;
+
+-- to bulk load that were not loaded earlier under specific path
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/
+file_format = CSV_FILEFORMAT;
+
+-- to bulk load all files under specific path
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/
+file_format = CSV_FILEFORMAT FORCE=TRUE;
+
+truncate table CUSTOMERS
+-- If you truncate table load history information will get reset so all files will get reloaded again with force=true
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/
+file_format = CSV_FILEFORMAT;
+/* after uploading file that contains extra comma in data to s3 if run below copy command it will throw error 
+as Number of columns in file (13) does not match that of the corresponding table (12) */
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/
+file_format = CSV_FILEFORMAT;
+
+describe table customers
+-- to handle above issue we need to set FIELD_OPTIONALLY_ENCLOSED_BY as " (double quotes)
+ALTER FILE FORMAT CSV_FILEFORMAT set FIELD_OPTIONALLY_ENCLOSED_BY='"';
+
+--now data will get loaded
+Copy into customers from @EXTERNAL_S3_STG/DW/loan_schema/dimcustomer/
+file_format = CSV_FILEFORMAT;
+
+select * from customers where country like 'Korea%'

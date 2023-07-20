@@ -1,0 +1,62 @@
+--Data Definition Language (DDL): changes the structure of the table like creating a table, drop a table, altering a table
+CREATE
+ALTER
+DROP
+TRUNCATE
+
+--CREATE
+Syntax: CREATE DATABASE database_name;
+
+create database PROD_DB;
+
+CREATE SCHEMA HR_SCHEMA;
+
+use HR_DEPT_DB;
+50 
+10 HR dept --
+12 
+20 FInance --
+create table empdtl (empid int,empname varchar(50),empsal int);
+
+--create table HR_SCHEMA.empdtl (empid int,empname varchar(50),empsal int)
+
+ALTER TABLE empdtl ADD empdesg VARCHAR(50);
+
+DESCRIBE TABLE empdtl;
+
+select * from empdtl;
+
+---DROP TABLE HR_SCHEMA.empdtl;
+
+alter table empdtl  alter column  empname varchar(100)
+
+describe table empdtl;
+
+ALTER TABLE empdtl  ADD EMPADDRESS VARCHAR(50)
+
+describe table empdtl;
+
+ALTER TABLE empdtl  DROP COLUMN EMPADDRESS
+
+describe table empdtl;
+/*Data Manipulation Language(DML)
+INSERT
+UPDATE
+DELETE */
+
+INSERT INTO empdtl  VALUES (1,'Kiran',50000,'SSE'),
+(2,'Madhu',50000,'SSE');  
+
+update empdtl set empdesg='TL', empsal=60000 where empid=2
+
+delete from empdtl where empid=1
+
+select empid,empname from empdtl;
+
+insert into empdtl (EMPID,EMPNAME,EMPSAL,EMPDESG)
+select 8,'krishna',70000,'TL' union all
+select 9,'balu',60000, 'SE' union all
+select 56,'hari',40000, 'ASE' union all
+select 34,'kish',900000,'MG'
+
+select * from empdtl where empdesg='TL';

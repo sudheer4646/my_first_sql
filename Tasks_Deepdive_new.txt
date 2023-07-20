@@ -1,0 +1,282 @@
+-- TASKS  -- Tasks can be used to schedule SQL statement
+
+-- task to schedule copy command
+CREATE TASK EMPLOYEE_TASK
+  WAREHOUSE = COMPUTE_WH
+  SCHEDULE = '1 MINUTE'
+AS
+   copy into sf_schema.emp from @my_external_stg/employee/emp.csv file_format = my_csv_format force=true
+   copy into sf_schema.table2 from @my_external_stg/employee/emp.csv file_format = my_csv_format force=true;
+
+create  task SERVERLESS_TASK
+SCHEDULE = '1 minute'
+USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'SMALL' 
+AS
+copy into sf_schema.emp from @my_external_stg/employee/emp_load1.csv file_format = my_csv_format force=true
+
+show tasks
+ALTER TASK EMPLOYEE_TASK RESUME;  -- needs to resume a task as soon as its created
+
+ALTER TASK EMPLOYEE_CHILD_TASK SET ALLOW_OVERLAPPING_EXECUTION = TRUE 
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+
+   
+TRUNCATE TABLE emp;
+
+select * from emp;
+show tasks;
+
+
+select count(*) from emp;
+select * from table(information_schema.task_history())
+  order by scheduled_time desc;
+
+select * from table(information_schema.task_history())   where scheduled_time>='2022-03-01 18:25:49.337 -0800'
+  order by scheduled_time desc;
+
+select current_timestamp
+select * from table(information_schema.task_history()) 
+where name='EMPLOYEE_TASK';
+
+
+----- SEQUENCE----------
+
+/*Each occurrence of a sequence generates a set of distinct values. 
+This is different from what many other databases provide, where multiple references 
+to NEXTVAL of a sequence return the same value for each row.*/
+
+create or replace sequence seq1;
+
+select seq1.nextval a, seq1.nextval b from dual;
+
+--To return two columns with the same generated sequence value, use nested subqueries and views:
+
+create or replace sequence seq1;
+
+describe sequence seq1
+
+select seq1.nextval as a, seq1.nextval as b,seq1.nextval as c  from dual
+
+select seqref.a a, seqref.a b from (select seq1.nextval a from dual) seqref;
+
+create table mytable ( id number autoincrement start 1 increment 1, name varchar, dept varchar ); 
+
+insert into mytable(name,dept) values('Ramesh', 'IT');
+insert into mytable(name,dept) values('Sreenu', 'Finance');
+
+select * from mytable
+
+
+--- TASK TREE----
+CREATE OR REPLACE TABLE EMPLOYEES(EMPLOYEE_ID INTEGER AUTOINCREMENT START = 1 INCREMENT = 1,
+                       EMPLOYEE_NAME VARCHAR DEFAULT 'Ramesh',
+                       LOAD_TIME DATETIME);
+                       
+CREATE OR REPLACE TABLE EMPLOYEE2(ID INTEGER,
+                       NAME VARCHAR,
+                      LOAD_TIME DATETIME DEFAULT CURRENT_TIMESTAMP);
+
+describe table EMPLOYEES;
+
+-- PARENT/ROOT TASK
+CREATE OR REPLACE TASK EMPLOYEE_ROOT_TASK
+  WAREHOUSE = COMPUTE_WH
+  SCHEDULE = '1 MINUTE'
+AS
+ INSERT INTO EMPLOYEES(LOAD_TIME) VALUES(CURRENT_TIMESTAMP);
+ 
+ select CURRENT_TIMESTAMP;
+ 
+ show tasks;
+
+-- CHILD TASK
+CREATE TASK EMPLOYEE_CHILD_TASK
+  WAREHOUSE = COMPUTE_WH
+  AFTER EMPLOYEE_ROOT_TASK
+AS
+INSERT INTO EMPLOYEE2(id,name) SELECT EMPLOYEE_ID, EMPLOYEE_NAME FROM EMPLOYEES where EMPLOYEE_ID =(SELECT max(EMPLOYEE_ID) FROM EMPLOYEES);
+
+ALTER TASK EMPLOYEE_CHILD_TASK RESUME;  -- first dependent tasks needs to be resume
+ALTER TASK EMPLOYEE_ROOT_TASK RESUME;
+--ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+
+show tasks;
+SHOW TASKS like '%EMPLOYEE_ROOT%';
+SHOW TASKS like 'EMPLOYEE_CHILD_TASK';
+
+
+select * from employees;
+select * from employee2;
+orchestration tools like airflow
+
+select * from table(information_schema.task_history()) where name in ('EMPLOYEE_ROOT_TASK', 'EMPLOYEE_CHILD_TASK')
+
+select *
+  from table(information_schema.task_history())
+ where database_name = 'SNOWFLAKE_EXERCISE'
+  order by scheduled_time;
+ 
+ALTER TASK EMPLOYEES_TASK RESUME;
+ALTER TASK EMPLOYEES_TASK SUSPEND;
+
+show tasks;
+
+select * from EMPLOYEES;
+select * from EMPLOYEE2;
+--task can have a maximum of 100 child tasks (i.e. other tasks that identify the task as a predecessor); in addition, a simple tree of tasks is limited to a maximum of 1000 tasks
+
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;  --Unable to update graph with root task EMPLOYEE_ROOT_TASK since that root task is not suspended.
+-- We have to suspend root task if we have to add child or granchild to that tree
+
+CREATE OR REPLACE TABLE EMPLOYEE3(ID INTEGER,
+                       NAME VARCHAR,
+                      LOAD_TIME DATETIME DEFAULT CURRENT_TIMESTAMP);
+
+CREATE OR REPLACE TABLE EMPLOYEE4(ID INTEGER,
+                       NAME VARCHAR,
+                      LOAD_TIME DATETIME DEFAULT CURRENT_TIMESTAMP);
+
+select * from EMPLOYEES; -- Root TASK
+select * from EMPLOYEE2;  --child task to root task
+select * from EMPLOYEE3;  --child task to root task   
+select * from EMPLOYEE4;  --grand child to root task and child to EMPLOYEE_CHILD_TASK task
+
+--Unable to update graph with root task SNOWFLAKE_EXERCISE.SF_SCHEMA.EMPLOYEE_ROOT_TASK since that root task is not suspended.
+
+CREATE OR REPLACE TASK EMPLOYEE_CHILD_TASK3
+  WAREHOUSE = COMPUTE_WH
+  AFTER EMPLOYEE_ROOT_TASK
+AS
+INSERT INTO EMPLOYEE3(id,name) SELECT EMPLOYEE_ID, EMPLOYEE_NAME FROM EMPLOYEES where EMPLOYEE_ID =(SELECT max(EMPLOYEE_ID) FROM EMPLOYEES);
+
+ALTER TASK EMPLOYEE_CHILD_TASK2 SUSPEND;
+ALTER TASK EMPLOYEE_CHILD_TASK SUSPEND;
+ALTER TASK EMPLOYEE_GRAND_CHILD_TASK SUSPEND;
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+
+
+ALTER TASK EMPLOYEE_CHILD_TASK3 RESUME;
+ALTER TASK EMPLOYEE_ROOT_TASK RESUME;
+
+
+show tasks;
+
+CREATE OR REPLACE TABLE EMPLOYEE4(ID INTEGER,
+                       NAME VARCHAR,
+                      LOAD_TIME DATETIME DEFAULT CURRENT_TIMESTAMP);
+                      
+
+CREATE OR REPLACE TASK EMPLOYEE_GRANDCHILD_TASK
+  WAREHOUSE = COMPUTE_WH
+  AFTER EMPLOYEE_CHILD_TASK
+AS
+INSERT INTO EMPLOYEE4(id,name) SELECT EMPLOYEE_ID, EMPLOYEE_NAME FROM EMPLOYEES2 where EMPLOYEE_ID =(SELECT max(EMPLOYEE_ID) FROM EMPLOYEES2);
+
+-- Tasks_dependents table function
+select * from table(information_schema.task_dependents(task_name => 'mydb.myschema.mytask', recursive => false));
+select * from table(information_schema.task_dependents(task_name => 'SNOWFLAKE_EXERCISE.SF_SCHEMA.EMPLOYEE_ROOT_TASK', recursive => false))
+
+select * from table(information_schema.task_dependents(task_name => 'SNOWFLAKE_EXERCISE.SF_SCHEMA.EMPLOYEE_ROOT_TASK', recursive => true))
+
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+--Resume all dependent tasks that are children of a root task with a case-insensitive name:
+
+ALTER TASK EMPLOYEE_CHILD_TASK3 SUSPEND;
+ALTER TASK EMPLOYEE_CHILD_TASK SUSPEND;
+ALTER TASK EMPLOYEE_GRAND_CHILD_TASK SUSPEND;
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+
+
+show tasks;
+
+select system$task_dependents_enable('mydb.myschema.mytask');
+--case sensitive task name
+select system$task_dependents_enable('mydb.myschema."myTask"');
+
+select system$task_dependents_enable('SNOWFLAKE_EXERCISE.SF_SCHEMA.EMPLOYEE_ROOT_TASK');
+
+show tasks;
+
+--EMPLOYEE_DEPENDENT_TASK3
+
+show tasks;
+
+
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+SHOW PARAMETERS LIKE 'USER_TASK_TIMEOUT_MS' IN TASK EMPLOYEE_ROOT_TASK;
+
+ALTER TASK EMPLOYEE_ROOT_TASK SET USER_TASK_TIMEOUT_MS = 6000000;
+
+ALTER TASK EMPLOYEE_ROOT_TASK SUSPEND;
+show tasks;
+
+CREATE TASK myTask
+    WAREHOUSE = myWarehouse
+    [SCHEDULE = x MINUTE | USING CRON cron_expression]
+    [parameters…]
+    [AFTER otherTask]
+[WHEN Boolean_expression]
+AS
+<some SQL statement>
+
+
+
+CREATE OR REPLACE TASK CRONE_SCHEDULE_TASK
+  WAREHOUSE = COMPUTE_WH
+  SCHEDULE = 'USING CRON 0 0 10-20 * TUE,THU UTC'
+AS
+ INSERT INTO EMPLOYEES(LOAD_TIME) VALUES(CURRENT_TIMESTAMP);
+
+show tasks like '%CRONE_SCHEDULE_TASK%';
+
+SCHEDULE = 'USING CRON 0 0 10-20 * TUE,THU UTC'
+
+# ____ minute (0-59)
+# | ____ hour (0-23)
+# | | __ day of month (1-5 or L)
+# | | | __ month (1,, JAN-DEC)
+# | | | | _ day of week (0-6, SUN-SAT, or L)
+# | | | | |
+# | | | | |
+  * * * * *
+
+* * * * * UTC   ---Every minute. UTC time zone.
+-------
+0 2 * * MON-FRI UTC   ---Every night at 2 AM. UTC time zone.
+
+0 5,17 * * * UTC ---Twice daily, at 5 AM and -5 PM (at the top of the hour). UTC time zone.
+
+30 2 L 3,6,9,12 * UTC  ---In June, on the last day of the month, at 2:30 AM. UTC time zone.
+
+SCHEDULE = 'USING CRON 30 9-17 * * SUN America/Los_Angeles'
+  TIMESTAMP_INPUT_FORMAT = 'YYYY-MM-DD HH24' --- every hour starting at 9 AM and ending at 5 PM on Sundays (America/Los_Angeles time zone)
+
+-- Tasks_dependents table function
+select * from table(information_schema.task_dependents(task_name => 'mydb.myschema.mytask', recursive => false));
+select * from table(information_schema.task_dependents(task_name => 'SNOWFLAKE_EXERCISE.SF_SCHEMA.EMPLOYEE_ROOT_TASK', recursive => false))
+
+select * from table(information_schema.task_dependents(task_name => 'SNOWFLAKE_EXERCISE.SF_SCHEMA.EMPLOYEE_ROOT_TASK', recursive => true))
+
+select current_timestamp();
+show parameters like 'TIMEZONE%' in account;
+alter account set timezone = 'Asia/Kolkata';
+
+alter account set timezone = 'America/Los_Angeles';
+show parameters like 'TIMEZONE%' in account;
+
+--https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+
+EXECUTE TASK <task name>
+
+--Manually trigger either a standalone task or the root task in a task tree independent of the schedule defined for the task'
+
+--We should also have EXECUTE TASK privilege
+
+GRANT EXECUTE TASK ON ACCOUNT TO ROLE SYSADMIN;
+
+EXECUTE TASK EMPLOYEE_TASK
+
+show tasks;
+
+select * from table(information_schema.task_history()) where name in ('EMPLOYEE_TASK');

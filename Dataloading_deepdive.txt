@@ -1,0 +1,67 @@
+1. Create a Database - sfdb
+create or replace database snowflake_exercise;
+2. Create a Schema - sf_schema
+create schema sf_schema;
+
+3. Create a file Format
+create or replace file format my_csv_format type=csv skip_header=1 ;
+
+describe file format my_csv_format
+4. Create Table Emp
+use snowflake_exercise;
+use schema sf_schema;
+create or replace table emp(  
+	empno    number,  
+	ename    varchar(100),  
+	job      varchar(25),  
+	mgr      number,  
+	hiredate varchar(100),  
+	sal      number,  
+	comm     number,  
+	deptno   number  
+	)
+   STAGE_FILE_FORMAT = ( FORMAT_NAME = 'my_csv_format');
+
+5. To Get the Script of Created Object
+   select get_ddl(<object type>, '<Object Name>' );
+   Select get_ddl('database','snowflake_exercise');
+   Select get_ddl('schema','sf_schema');
+   Select get_ddl('table','emp');
+   
+6. Create Stage 
+/*   Create Stage my_internal_stage; -- with out file format
+   Create Stage my_internal_stage file_format=my_csv_format; -- Internal Named stage 
+   
+   LIST @my_internal_stage;*/
+  --external named stage
+  /*create or replace stage my_external_stg
+  storage_integration = storage_s3_integration
+  url = 's3://skillsrawbucket/DW/';*/
+
+CREATE STAGE my_external_stg URL = 's3://skillscaleraw/DW/' 
+CREDENTIALS = (AWS_KEY_ID = 'AKIAU54YTHYE3ECTUVDL' AWS_SECRET_KEY = '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');
+
+LIST @my_external_stg 
+  --file_format = my_csv_format;
+  
+ List @my_external_stg/employee/;
+ ALTER STAGE my_external_stg set file_format=my_csv_format;
+
+ CST
+7. Query From Stage
+    External Named Stage
+    --------------------
+    LIST @my_external_stg/employee
+    
+    Select $1,$2,$3,$4,$5,$6,$7,$8  from @my_external_stg/employee/emp.csv (file_format => 'my_csv_format')
+   
+    Select $1 as empid,$3 as job from @my_external_stg/employee/ (file_format => 'my_csv_format') limit 5;
+    Select $1,$6,$3 as job,$8 from @my_external_stg/employee/emp.csv (file_format => 'my_csv_format') limit 5;
+
+8.loading specific set of files and data in differnt order
+  copy into emp (EMPNO,ENAME,JOB,MGR,SAL) from (Select $1,$2,$3,$4,$6 from @my_external_stg/employee/emp.csv) 
+	 file_format = 'my_csv_format' FORCE=TRUE;	 
+-- OTHER COPY OPTIONS
+ copy into emp from (Select $1,$2,$3,$4,$5,$6,$7,$8 from @my_external_stg/employee/) 
+ FILES = ('emp.csv','emp_load1.csv')  file_format = 'my_csv_format' FORCE=TRUE;	 
+ 

@@ -1,0 +1,148 @@
+create or replace TABLE EMP_DTL (
+	EMPID NUMBER(38,0),
+	EMPNAME VARCHAR(100),
+	EMPSAL NUMBER(38,0),
+	EMPDESG VARCHAR(50),
+	EMAILID VARCHAR(50)
+);
+
+insert into emp_dtl (empid, empname,empsal, empdesg)
+select 81,'ravi',80000,'TL' union all
+select 91,'balu',70000, 'SE' union all
+select 97,'hari',50000, 'ASE' union all
+select 116,'kish',1000000,'MG' union all
+select 8,'krishna',70000,'TL' union all
+select 9,'Rajesh',60000, 'SE' union all
+select 56,'Ramesh',40000, 'ASE' union all
+select 34,'Raju',900000,'MG'
+
+-- ORDER BY CLAUSE : used to show the data either in ascending order or descending order 
+-- Default order is ascending
+select * from  emp_dtl order by empsal desc
+select * from  emp_dtl order by empsal    -- default sorting order ascending
+select * from  emp_dtl order by empsal desc, empname desc
+
+select * from  emp_dtl order by empid asc
+
+-- GROUP BY: used to group the data based on column specified in group by class
+select * from emp_dtl
+delete from emp_dtl where empdesg ='';
+-- LIST distinct values in a column
+
+select * from emp_dtl order by empdesg
+select distinct empdesg from emp_dtl
+select empdesg,SUM(empsal) as sum from emp_dtl group by empdesg
+select empdesg,MAX(empsal) as maxsal from emp_dtl group by empdesg
+select empdesg,min(empsal) as minsal from emp_dtl group by empdesg
+select empdesg,avg(empsal) as avgsal from emp_dtl group by empdesg
+select empdesg,count(empid) as desg from emp_dtl group by empdesg
+select empname, empdesg,MAX(empsal) as sum from emp_dtl group by empdesg -- empname -- will through error
+select empname, empdesg,SUM(empsal) as sum from emp_dtl group by empdesg, empname
+select empdesg,SUM(empsal) as sum from emp_dtl  group by empdesg, empname, empsal
+--Having => Its nothing but where class but it is used only for aggregate functions (after group by to filter=> having)
+select empdesg,SUM(empsal) as sum from emp_dtl  where sum>100000 group by empdesg 
+select empdesg,SUM(empsal) as sum from emp_dtl group by empdesg having sum(empsal)>100000 order by empdesg 
+select empdesg,SUM(empsal) as empsal_sum from emp_dtl where empsal<100000  group by empdesg having sum(empsal)>50000 order by empdesg
+
+--where condition, groupby, having and order by is the sequence of using those statements
+select * from emp_dtl
+select top 7 * from emp_dtl
+select top 5 empid,empname from emp_dtl
+--select * from emp_dtl limit 5 -- in oracle
+
+--System defined functions readily available to do operations
+select * from emp_dtl
+-- Aggregate functions
+select  SUM(empsal) from emp_dtl
+select empdesg, SUM(empsal) from emp_dtl group by empdesg
+select MAX(empsal) as max_sal,min(empsal) min_sal  from emp_dtl
+select MIN(empsal) from emp_dtl
+select AVG(empsal) from emp_dtl
+-- count:  used to find number of rows in a specified table
+
+select * from emp_dtl;
+select count(*) from emp_dtl -- gives count of records in your table
+select count(empid) from emp_dtl
+
+insert into emp_dtl (empname) values('Ramesh')
+
+select * from emp_dtl
+
+UPDATE emp_dtl  SET EMAILID=EMPNAME||'@skillscaler.net'
+describe table emp_dtl
+-- STRING FUNCTIONS
+select SUBSTRING('hello world',3,5)
+select SUBSTRING(empname,1,3) from emp_dtl
+select LEN('micro soft')
+select empname,LEN(empname) from emp_dtl
+select LTRIM('      microsoft        ')
+select RTRIM('        microsoft employee     ')
+select LTRIM(RTRIM('      microsoft        '))
+select REVERSE('microsoft')
+select empname, REVERSE(empname),len(empname) from emp_dtl
+select REPLACE('ABCD','ABC','P')
+SELECT emailid, REPLACE(EMAILID,'@','$') FROM EMP_dtl
+SELECT emailid, REPLACE(EMAILID,'@','#') FROM EMP_dtl
+SELECT empname,LEFT(EMPNAME,2) FROM EMP_dtl
+SELECT empname,RIGHT(EMPNAME,2) FROM EMP_dtl
+SELECT EMPNAME, UPPER(EMPNAME) FROM EMP_dtl
+SELECT EMPNAME,EMAILID, LOWER(EMAILID) as FormatedEmail FROM EMP_dtl
+select REPLICATE('T',5)
+select REPEAT('T',5)  -- REPEAT is equivalient of Replicate in snowflake
+select STUFF('ABCDEFGHIJK',2,5,'PQ')
+
+select CONCAT(SUBSTR('ABCDEFGHIJK',1,(2-1)),'PQ',SUBSTR('ABCDEFGHIJK',(2+5)))
+select REPLACE('ABCD','AB','PQ')
+SELECT CHARINDEX('D','ABCDEFG')
+SELECT emailid,CHARINDEX('@',emailid), LEFT(emailid,CHARINDEX('@',emailid)-1) FROM EMP_dtl
+SELECT COUNT(*) FROM emp_dtl  --TOTAL NO OF records/rows
+SELECT COUNT(EMPNAME) FROM EMP  -- count of rows in that column excluding nulls
+SELECT COUNT( DISTINCT EMPNAME) FROM EMP_dtl -- unique value count
+select * from emp_dtl order by empname
+SELECT EMPNAME, count(*) as cnt FROM EMP_dtl group by empname
+SELECT EMPNAME, count(*) as cnt FROM EMP_dtl group by empname having count(*)>1
+insert into emp_dtl (empname) values('balu')
+select * from EMP_dtl
+-- Mathematical functions
+SELECT CEIL(94.6) --95  -- in snowflake we have to use CEIL instead of CEILING
+SELECT CEILING(94.1) --95  -- it wont work in snowflake we have to CEAL instead
+SELECT FLOOR(94.6)  --94
+SELECT FLOOR(94.9)
+SELECT ROUND(94.5647,1)  --94.6
+SELECT ROUND(94.5647,2)  --94.56
+SELECT ROUND(94.5667,2)  --94.57
+SELECT ROUND(94.5647,3)  --94.5650
+LOG, SIN, COS, TAN,EXP,SQRT
+
+select SQRT(4) 
+select SQRT(9) 
+
+-- DATE FUNCTIONS
+select GETDATE()
+--Snowflake specific Date functions
+SELECT DATE_PART(YY, GETDATE())
+SELECT DATE_PART(MM, GETDATE())
+MM-MONTH
+DD- DATE
+HH- HOURS
+MI- MINUTES
+SS- SECONDSS
+MS- MILLI SECONDS
+SELECT DATE_PART(MM, GETDATE())
+SELECT DATE_PART(DD, GETDATE())
+SELECT DATE_PART(HH, GETDATE())
+SELECT DATE_PART(MM, BIRTHDATE) FROM EMP_DTL
+
+SELECT DATEADD(YY,3,GETDATE()) --ADDS 3YEARS TO CURRENT DATE
+SELECT DATEADD(YY,-3,GETDATE()) -- substracts 3 years from current date
+
+SELECT DATEDIFF(MM,'2013-12-26','2017-02-27')   --38
+
+SELECT DATEDIFF(YYYY,'1995-01-01','2022-01-01') 
+SELECT DATEDIFF(MM,'1995-01-01','2022-03-01') 
+SELECT DATEDIFF(DD,'1995-01-01','2022-03-01') 
+
+--SELECT DATENAME(DW,GETDATE())
+SELECT DAYNAME(GETDATE())
+
+SELECT MONTHNAME(GETDATE())
